@@ -125,7 +125,7 @@ export default {
     async obtenerItinerarios() {
       try {
         const response = await axios.get(
-          `${API_BASE_URL}api/Itinerario/ObtenerTodosLosItinerariosAsync`
+          `${API_BASE_URL}api/Itinerario/ObtenerItinerarios`
         );
         this.itinerarios = response.data;
       } catch (error) {
@@ -163,7 +163,7 @@ export default {
       if (this.isEdit) {
         axios
           .put(
-            `${API_BASE_URL}api/Itinerario/ActualizarItinerarioAsync/${this.currentItinerarioId}`,
+            `${API_BASE_URL}api/Itinerario/ActualizarItinerario`,
             this.itinerarioForm
           )
           .then(() => {
