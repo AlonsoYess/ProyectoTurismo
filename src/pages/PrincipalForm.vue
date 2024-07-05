@@ -62,36 +62,44 @@
             id="navbarCollapse"
           >
             <div class="navbar-nav ml-auto py-0">
-              <a href="index.html" class="nav-item nav-link active">Home</a>
-              <a href="about.html" class="nav-item nav-link">About</a>
-              <a href="service.html" class="nav-item nav-link">Services</a>
-              <a href="package.html" class="nav-item nav-link">Tour Packages</a>
-              <div class="nav-item dropdown">
-                <a
-                  href="#"
-                  class="nav-link dropdown-toggle"
-                  data-toggle="dropdown"
-                  >Pages</a
-                >
-                <div class="dropdown-menu border-0 rounded-0 m-0">
-                  <a href="blog.html" class="dropdown-item">Blog Grid</a>
-                  <a href="single.html" class="dropdown-item">Blog Detail</a>
-                  <a href="destination.html" class="dropdown-item"
-                    >Destination</a
-                  >
-                  <a href="guide.html" class="dropdown-item">Travel Guides</a>
-                  <a href="testimonial.html" class="dropdown-item"
-                    >Testimonial</a
-                  >
-                </div>
-              </div>
-              <a href="contact.html" class="nav-item nav-link">Contact</a>
+              <a href="" class="nav-item nav-link active">Inicio</a>
+              <a href="" class="nav-item nav-link">Nosotros</a>
+              <a href="" class="nav-item nav-link">Excursiones</a>
+              <a
+                @click="showLoginDialog = true"
+                class="nav-item nav-link"
+                style="cursor: pointer"
+              >
+                <i class="fas fa-user"></i> Login
+              </a>
             </div>
           </div>
         </nav>
       </div>
     </div>
     <!-- Navbar End -->
+
+    <!-- Login Dialog -->
+    <q-dialog v-model="showLoginDialog" no-scroll>
+      <q-card class="my-login">
+        <q-card-section class="my-login-section-cabecera">
+          <div class="text-h6 text-primary text-center">Iniciar Sesión</div>
+        </q-card-section>
+
+        <q-card-section class="my-login-section">
+          <q-input v-model="username" label="Usuario" />
+          <q-input v-model="password" label="Contraseña" type="password" />
+        </q-card-section>
+
+        <q-btn
+          flat
+          label="Ingresar"
+          color="primary"
+          class="btn btn-outline-secondary login-btn w-100 mb-3"
+          @click="login"
+        />
+      </q-card>
+    </q-dialog>
 
     <!-- Carousel Start -->
     <div class="container-fluid p-0">
@@ -192,7 +200,7 @@
     <!-- Booking End -->
 
     <!-- About Start -->
-    <div class="container-fluid py-5">
+    <div id="nosotros" class="container-fluid py-5">
       <div class="container pt-5">
         <div class="row">
           <div class="col-lg-6" style="min-height: 500px">
@@ -625,31 +633,117 @@
 </template>
 
 <script>
+import axios from "axios";
+import Cookies from "js-cookie";
+import { mapActions } from "vuex";
+import { API_BASE_URL } from "../config";
+import { Notify, Dialog } from "quasar";
+
 export default {
   data() {
     return {
-      registerForm: {
-        name: "",
-        email: "",
-        password: "",
-      },
-      loginForm: {
-        email: "",
-        password: "",
-      },
+      showLoginDialog: false,
+      username: "",
+      password: "",
+      errorMessage: "",
     };
   },
   methods: {
-    register() {
-      // Lógica para registrar usuario
-      console.log("Registrando usuario:", this.registerForm);
-    },
-    login() {
-      // Lógica para iniciar sesión
-      console.log("Iniciando sesión con:", this.loginForm);
+    ...mapActions(["setUser", "setToken"]),
+    async login() {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}api/Usuario/login`,
+          {
+            Usuario: this.username,
+            Password: this.password,
+            TipoUsuario: 2,
+          },
+          {
+            withCredentials: true,
+          }
+        );
+
+        const usuario = response.data;
+
+        // Guarda tokens en cookies
+        Cookies.set("access_token", usuario.Token, {
+          secure: true,
+          sameSite: "Strict",
+        });
+        Cookies.set("refresh_token", usuario.RefreshToken, {
+          secure: true,
+          sameSite: "Strict",
+        });
+
+        // Guarda usuario en localStorage
+        localStorage.setItem("userWeb", JSON.stringify(usuario));
+
+        // Guarda usuario y token en el estado de la aplicación (Vuex)
+        this.setUser(usuario); // Llama a la acción setUser para guardar el usuario en Vuex
+        this.setToken(usuario.Token);
+
+        Notify.create({
+          type: "positive",
+          message: "Bienvenido " + usuario.nombre,
+          position: "center",
+          timeout: 1500,
+        });
+
+        // Redirige a la página principal o a donde desees
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+
+        // Verifica si es un error de autenticación
+        if (error.response && error.response.status === 401) {
+          Notify.create({
+            type: "negative",
+            message: "Error : Credenciales incorrectas ",
+            position: "top",
+            timeout: 1500,
+          });
+        } else {
+          this.errorMessage =
+            "Error al iniciar sesión. Por favor, inténtalo más tarde.";
+        }
+      }
+
+      this.showLoginDialog = false;
     },
   },
 };
 </script>
 
-<style></style>
+<style>
+.my-login {
+  max-width: 400px;
+  margin: auto;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.my-login-section {
+  padding: 20px;
+  margin-left: 20px;
+}
+
+.my-login-section-cabecera {
+  padding: 20px;
+}
+
+.my-login-actions {
+  padding: 10px 20px;
+}
+
+.text-primary {
+  color: #007bff;
+}
+
+.nav-item .fa-user {
+  margin-right: 5px;
+}
+
+.q-dialog__inner {
+  overflow: hidden;
+}
+</style>

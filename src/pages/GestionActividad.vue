@@ -13,6 +13,7 @@
           <th>Fecha de Inicio</th>
           <th>Fecha de Fin</th>
           <th>Empresa</th>
+          <th>Imagen</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -24,6 +25,13 @@
           <td>{{ new Date(actividad.fechaInicio).toLocaleDateString() }}</td>
           <td>{{ new Date(actividad.fechaFin).toLocaleDateString() }}</td>
           <td>{{ actividad.empresa }}</td>
+          <td>
+            <img
+              :src="`https://localhost:7012/imagenes/${actividad.imagen}`"
+              class="img-thumbnail"
+              style="max-width: 100px; max-height: 100px"
+            />
+          </td>
           <td>
             <button class="btn btn-warning" @click="showEditModal(actividad)">
               Editar
@@ -148,6 +156,16 @@
                   </option>
                 </select>
               </div>
+              <div class="mb-3">
+                <label for="imagen" class="form-label">Imagen</label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="imagen"
+                  @change="handleImageUpload($event)"
+                  accept="image/*"
+                />
+              </div>
               <button type="submit" class="btn btn-primary">
                 {{ isEdit ? "Guardar Cambios" : "Agregar" }}
               </button>
@@ -163,7 +181,7 @@
 import axios from "axios";
 import { Modal } from "bootstrap";
 import { API_BASE_URL } from "../config"; // Importar la constante
-import { Notify } from "quasar";
+import { Notify, Dialog } from "quasar";
 import { mapGetters } from "vuex";
 
 export default {
@@ -180,15 +198,24 @@ export default {
         precio: 0,
         capacidad: 0,
         empresaId: null,
+        imagen: "",
       },
       isEdit: false,
       currentActividadId: null,
+      selectedImage: null,
     };
   },
   computed: {
     ...mapGetters(["getUser"]), // Importar el getter 'getUser' desde Vuex
   },
   methods: {
+    handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.selectedImage = file;
+        this.actividadForm.imagen = file.name; // Guardar el nombre del archivo en actividadForm
+      }
+    },
     async obtenerActividades() {
       try {
         const token = this.getUser.token; // Obtener el token directamente desde Vuex
@@ -232,6 +259,7 @@ export default {
         precio: 0,
         capacidad: 0,
         empresaId: null,
+        imagen: "",
       };
       new Modal(document.getElementById("actividadModal")).show();
     },
@@ -246,65 +274,64 @@ export default {
 
       this.isEdit = true;
       this.currentActividadId = actividad.id;
+
       this.actividadForm = { ...actividad };
+
       new Modal(document.getElementById("actividadModal")).show();
     },
-    guardarActividad() {
+    async guardarActividad() {
       const token = this.getUser.token; // Obtener el token directamente desde Vuex
 
-      if (this.isEdit) {
-        axios
-          .put(
-            `${API_BASE_URL}api/Actividad/ActualizarActividad`,
-            this.actividadForm,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-          .then(() => {
-            this.obtenerActividades();
-            Modal.getInstance(document.getElementById("actividadModal")).hide();
-
-            Notify.create({
-              type: "positive",
-              message: "Actividad editada correctamente",
-              timeout: 3000,
-              position: "top",
-            });
-          })
-          .catch((error) => {
-            Notify.create({
-              type: "negative",
-              message: "Error al editar la actividad: " + error.message,
-              timeout: 3000,
-              position: "top",
-            });
-          });
+      const formData = new FormData();
+      formData.append("id", this.actividadForm.id);
+      formData.append("titulo", this.actividadForm.titulo);
+      formData.append("descripcion", this.actividadForm.descripcion);
+      formData.append("destino", this.actividadForm.destino);
+      formData.append("fechaInicio", this.actividadForm.fechaInicio);
+      formData.append("fechaFin", this.actividadForm.fechaFin);
+      formData.append("precio", this.actividadForm.precio);
+      formData.append("capacidad", this.actividadForm.capacidad);
+      formData.append("empresaId", this.actividadForm.empresaId);
+      if (this.selectedImage) {
+        formData.append("imagen", this.selectedImage);
       } else {
-        axios
-          .post(
-            `${API_BASE_URL}api/Actividad/CrearActividad`,
-            this.actividadForm,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-          .then(() => {
-            this.obtenerActividades();
-            Modal.getInstance(document.getElementById("actividadModal")).hide();
-
-            Notify.create({
-              type: "positive",
-              message: "Actividad creada correctamente",
-              timeout: 3000,
-              position: "top",
-            });
-          })
-          .catch((error) => {
-            Notify.create({
-              type: "negative",
-              message: "Error al crear la actividad: " + error.message,
-              timeout: 3000,
-              position: "top",
-            });
-          });
+        formData.append("ImagenAnterior", this.actividadForm.imagen);
       }
+
+      const url = this.isEdit
+        ? `${API_BASE_URL}api/Actividad/ActualizarActividad`
+        : `${API_BASE_URL}api/Actividad/CrearActividad`;
+
+      axios
+        .post(url, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        .then(() => {
+          this.obtenerActividades();
+          Modal.getInstance(document.getElementById("actividadModal")).hide();
+
+          Notify.create({
+            type: "positive",
+            message: this.isEdit
+              ? "Actividad editada correctamente"
+              : "Actividad creada correctamente",
+            timeout: 3000,
+            position: "top",
+          });
+        })
+        .catch((error) => {
+          Notify.create({
+            type: "negative",
+            message: this.isEdit
+              ? "Error al editar la actividad: " + error.message
+              : "Error al crear la actividad: " + error.message,
+            timeout: 3000,
+            position: "top",
+          });
+        });
     },
     deleteActividad(id) {
       const token = this.getUser.token; // Obtener el token directamente desde Vuex

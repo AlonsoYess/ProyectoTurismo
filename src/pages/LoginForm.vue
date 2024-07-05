@@ -84,6 +84,7 @@ export default {
           {
             Usuario: this.userName,
             Password: this.password,
+            TipoUsuario: 1,
           },
           {
             withCredentials: true,
