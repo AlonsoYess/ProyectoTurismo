@@ -252,6 +252,168 @@
     </div>
     <!-- About End -->
 
+    <!-- Packages Start -->
+    <div class="container-fluid py-5">
+      <div class="container pt-5 pb-3">
+        <div class="text-center mb-3 pb-3">
+          <h6 class="text-primary text-uppercase" style="letter-spacing: 5px">
+            Excursiones
+          </h6>
+          <h1>Excursiones perfectos</h1>
+        </div>
+        <div class="row">
+          <div
+            class="col-lg-4 col-md-6 mb-4"
+            v-for="act in actividades"
+            :key="act.id"
+          >
+            <div class="package-item bg-white mb-2" @click="showModal(act)">
+              <img
+                class="img-fluid"
+                :src="`https://localhost:7012/imagenes/${act.imagen}`"
+                alt=""
+              />
+              <div class="p-4">
+                <div class="d-flex justify-content-between mb-3">
+                  <small class="m-0"
+                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
+                    >{{ act.destino }}</small
+                  >
+                  <small class="m-0"
+                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>4
+                    días</small
+                  >
+                </div>
+                <a class="h5 text-decoration-none" href=""> {{ act.titulo }}</a>
+                <div class="border-top mt-4 pt-4">
+                  <div class="d-flex justify-content-between">
+                    <h6 class="m-0">
+                      <i class="fa fa-star text-primary mr-2"></i>4.5
+                      <small>(250)</small>
+                    </h6>
+                    <h5 class="m-0">S./ {{ act.precio }}</h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Agregar/Editar -->
+    <div
+      class="modal fade"
+      id="actividadDetalleModal"
+      tabindex="-1"
+      aria-labelledby="actividadDetalleModal"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="actividadModalLabel">
+              {{ actividadForm.titulo }}
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6">
+                <img
+                  class="img-fluid"
+                  :src="`https://localhost:7012/imagenes/${actividadForm.imagen}`"
+                  alt="Imagen de la Actividad"
+                />
+              </div>
+              <div class="col-md-6">
+                <p>
+                  <strong>Descripción:</strong> {{ actividadForm.descripcion }}
+                </p>
+                <p><strong>Destino:</strong> {{ actividadForm.destino }}</p>
+                <p>
+                  <strong>Fecha de Inicio:</strong>
+                  {{ new Date(actividadForm.fechaInicio).toLocaleDateString() }}
+                </p>
+                <p>
+                  <strong>Fecha de Fin:</strong>
+                  {{ new Date(actividadForm.fechaFin).toLocaleDateString() }}
+                </p>
+                <p><strong>Precio:</strong> S./ {{ actividadForm.precio }}</p>
+                <p><strong>Capacidad:</strong> {{ actividadForm.capacidad }}</p>
+                <p><strong>Empresa:</strong> {{ actividadForm.empresaId }}</p>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <h5>Itinerario:</h5>
+                <ul>
+                  <li
+                    v-for="itinerario in actividadForm.itinerarios"
+                    :key="itinerario.id"
+                  >
+                    <strong>Día {{ itinerario.dia }}:</strong>
+                    {{ itinerario.descripcion }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Sección de Reseñas -->
+            <div class="row mt-4">
+              <div>
+                <h5>Reseñas:</h5>
+                <ul>
+                  <li v-for="review in reviews" :key="review.date">
+                    <p><strong>Fecha:</strong> {{ review.date }}</p>
+                    <p>
+                      <strong>Valoración:</strong> {{ review.rating }} estrellas
+                    </p>
+                    <p><strong>Comentario:</strong> {{ review.text }}</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <b-form-rating
+                v-model="value"
+                variant="warning"
+                class="mb-2"
+              ></b-form-rating>
+              <p class="mt-2">Value: {{ value }}</p>
+            </div>
+
+            <!-- Añadir Reseña -->
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <h5>Añadir Reseña:</h5>
+
+                <div class="form-group mt-2">
+                  <label for="newReview">Comentario:</label>
+                  <textarea
+                    id="newReview"
+                    v-model="newReview"
+                    class="form-control"
+                    rows="3"
+                  ></textarea>
+                </div>
+                <button class="btn btn-primary mt-2">Añadir Reseña</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Packages End -->
+
     <!-- Destination Start -->
     <div class="container-fluid py-5">
       <div class="container pt-5 pb-3">
@@ -375,243 +537,6 @@
     </div>
     <!-- Destination Start -->
 
-    <!-- Packages Start -->
-    <div class="container-fluid py-5">
-      <div class="container pt-5 pb-3">
-        <div class="text-center mb-3 pb-3">
-          <h6 class="text-primary text-uppercase" style="letter-spacing: 5px">
-            Paquetes
-          </h6>
-          <h1>Paquetes turisticos perfectos</h1>
-        </div>
-        <div class="row">
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="package-item bg-white mb-2">
-              <img
-                class="img-fluid"
-                src="../assets/imagenes/package-1.jpg"
-                alt=""
-              />
-              <div class="p-4">
-                <div class="d-flex justify-content-between mb-3">
-                  <small class="m-0"
-                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
-                    >Thailand</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>3
-                    días</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-user text-primary mr-2"></i>2
-                    Personas</small
-                  >
-                </div>
-                <a class="h5 text-decoration-none" href=""
-                  >Descubra con nosotros lugares increíbles del mundo</a
-                >
-                <div class="border-top mt-4 pt-4">
-                  <div class="d-flex justify-content-between">
-                    <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
-                    </h6>
-                    <h5 class="m-0">$350</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="package-item bg-white mb-2">
-              <img
-                class="img-fluid"
-                src="../assets/imagenes/package-2.jpg"
-                alt=""
-              />
-              <div class="p-4">
-                <div class="d-flex justify-content-between mb-3">
-                  <small class="m-0"
-                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
-                    >Thailand</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>3
-                    días</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-user text-primary mr-2"></i>2
-                    Personas</small
-                  >
-                </div>
-                <a class="h5 text-decoration-none" href=""
-                  >Descubra con nosotros lugares increíbles del mundo</a
-                >
-                <div class="border-top mt-4 pt-4">
-                  <div class="d-flex justify-content-between">
-                    <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
-                    </h6>
-                    <h5 class="m-0">$350</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="package-item bg-white mb-2">
-              <img
-                class="img-fluid"
-                src="../assets/imagenes/package-3.jpg"
-                alt=""
-              />
-              <div class="p-4">
-                <div class="d-flex justify-content-between mb-3">
-                  <small class="m-0"
-                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
-                    >Thailand</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>3
-                    días</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-user text-primary mr-2"></i>2
-                    Personas</small
-                  >
-                </div>
-                <a class="h5 text-decoration-none" href=""
-                  >Descubra con nosotros lugares increíbles del mundo</a
-                >
-                <div class="border-top mt-4 pt-4">
-                  <div class="d-flex justify-content-between">
-                    <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
-                    </h6>
-                    <h5 class="m-0">$350</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="package-item bg-white mb-2">
-              <img
-                class="img-fluid"
-                src="../assets/imagenes/package-4.jpg"
-                alt=""
-              />
-              <div class="p-4">
-                <div class="d-flex justify-content-between mb-3">
-                  <small class="m-0"
-                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
-                    >Thailand</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>3
-                    días</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-user text-primary mr-2"></i>2
-                    Personas</small
-                  >
-                </div>
-                <a class="h5 text-decoration-none" href=""
-                  >Descubra con nosotros lugares increíbles del mundo</a
-                >
-                <div class="border-top mt-4 pt-4">
-                  <div class="d-flex justify-content-between">
-                    <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
-                    </h6>
-                    <h5 class="m-0">$350</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="package-item bg-white mb-2">
-              <img
-                class="img-fluid"
-                src="../assets/imagenes/package-5.jpg"
-                alt=""
-              />
-              <div class="p-4">
-                <div class="d-flex justify-content-between mb-3">
-                  <small class="m-0"
-                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
-                    >Thailand</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>3
-                    días</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-user text-primary mr-2"></i>2
-                    Personas</small
-                  >
-                </div>
-                <a class="h5 text-decoration-none" href=""
-                  >Descubra con nosotros lugares increíbles del mundo</a
-                >
-                <div class="border-top mt-4 pt-4">
-                  <div class="d-flex justify-content-between">
-                    <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
-                    </h6>
-                    <h5 class="m-0">$350</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="package-item bg-white mb-2">
-              <img
-                class="img-fluid"
-                src="../assets/imagenes/package-6.jpg"
-                alt=""
-              />
-              <div class="p-4">
-                <div class="d-flex justify-content-between mb-3">
-                  <small class="m-0"
-                    ><i class="fa fa-map-marker-alt text-primary mr-2"></i
-                    >Thailand</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-calendar-alt text-primary mr-2"></i>3
-                    días</small
-                  >
-                  <small class="m-0"
-                    ><i class="fa fa-user text-primary mr-2"></i>2
-                    Personas</small
-                  >
-                </div>
-                <a class="h5 text-decoration-none" href=""
-                  >Descubra con nosotros lugares increíbles del mundo</a
-                >
-                <div class="border-top mt-4 pt-4">
-                  <div class="d-flex justify-content-between">
-                    <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
-                    </h6>
-                    <h5 class="m-0">$350</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Packages End -->
-
     <!-- Footer -->
 
     <div
@@ -638,6 +563,7 @@ import Cookies from "js-cookie";
 import { mapActions } from "vuex";
 import { API_BASE_URL } from "../config";
 import { Notify, Dialog } from "quasar";
+import { Modal } from "bootstrap";
 
 export default {
   data() {
@@ -646,6 +572,22 @@ export default {
       username: "",
       password: "",
       errorMessage: "",
+      value: null,
+      actividades: [],
+      actividadForm: {
+        titulo: "",
+        descripcion: "",
+        destino: "",
+        fechaInicio: "",
+        fechaFin: "",
+        precio: 0,
+        capacidad: 0,
+        empresaId: null,
+        imagen: "",
+        newReview: "",
+        newRating: 0,
+        reviews: [],
+      },
     };
   },
   methods: {
@@ -710,6 +652,30 @@ export default {
 
       this.showLoginDialog = false;
     },
+    async obtenerActividades() {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`
+        );
+        this.actividades = response.data;
+      } catch (error) {
+        Notify.create({
+          type: "negative",
+          message: "Error al recuperar actividades: " + error.message,
+        });
+      }
+    },
+    showModal(act) {
+      act.fechaInicio = new Date(act.fechaInicio).toISOString().split("T")[0];
+
+      act.fechaFin = new Date(act.fechaFin).toISOString().split("T")[0];
+
+      this.actividadForm = { ...act };
+      new Modal(document.getElementById("actividadDetalleModal")).show();
+    },
+  },
+  mounted() {
+    this.obtenerActividades();
   },
 };
 </script>
