@@ -69,14 +69,14 @@ import { API_BASE_URL } from "../config";
 export default {
   data() {
     return {
-      userName: "",
-      password: "",
+      userName: "74637140",
+      password: "Mandril80$$",
       rememberMe: false,
       errorMessage: "",
     };
   },
   methods: {
-    ...mapActions(["setUser"]),
+    ...mapActions(["setUser", "setToken"]),
     async onSubmit() {
       try {
         const response = await axios.post(
@@ -107,10 +107,10 @@ export default {
 
         // Guarda usuario y token en el estado de la aplicación (Vuex)
         this.setUser(usuario); // Llama a la acción setUser para guardar el usuario en Vuex
-        this.$store.commit("setToken", usuario.Token); // Asume que tienes una mutación setToken en tu store para guardar el token
+        this.setToken(usuario.Token);
 
         // Redirige a la página principal o a donde desees
-        this.$router.push("/");
+        this.$router.push("/admin");
       } catch (error) {
         console.error("Error al iniciar sesión:", error);
 

@@ -106,6 +106,7 @@ import axios from "axios";
 import { Modal } from "bootstrap";
 import { API_BASE_URL } from "../config"; // Importar la constante
 import { Notify } from "quasar";
+import { mapGetters } from "vuex";
 
 export default {
   data() {
@@ -121,24 +122,33 @@ export default {
       currentItinerarioId: null,
     };
   },
+  computed: {
+    ...mapGetters(["getUser"]), // Importar el getter 'getUser' desde Vuex
+  },
   methods: {
     async obtenerItinerarios() {
       try {
+        const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
         const response = await axios.get(
-          `${API_BASE_URL}api/Itinerario/ObtenerItinerarios`
+          `${API_BASE_URL}api/Itinerario/ObtenerItinerarios`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         this.itinerarios = response.data;
       } catch (error) {
         Notify.create({
           type: "negative",
-          message: "Error al recuperar datos: " + error.message,
+          message: "Error al recuperar itinerarios: " + error.message,
         });
       }
     },
     async obtenerActividades() {
       try {
+        const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
         const response = await axios.get(
-          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`
+          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         this.actividades = response.data;
       } catch (error) {
@@ -164,7 +174,8 @@ export default {
         axios
           .put(
             `${API_BASE_URL}api/Itinerario/ActualizarItinerario`,
-            this.itinerarioForm
+            this.itinerarioForm,
+            { headers: { Authorization: `Bearer ${this.getUser.token}` } }
           )
           .then(() => {
             this.obtenerItinerarios();
@@ -177,12 +188,20 @@ export default {
               timeout: 3000,
               position: "top",
             });
+          })
+          .catch((error) => {
+            console.error("Error al actualizar itinerario:", error);
+            Notify.create({
+              type: "negative",
+              message: "Error al actualizar itinerario: " + error.message,
+            });
           });
       } else {
         axios
           .post(
             `${API_BASE_URL}api/Itinerario/CrearItinerario`,
-            this.itinerarioForm
+            this.itinerarioForm,
+            { headers: { Authorization: `Bearer ${this.getUser.token}` } }
           )
           .then(() => {
             this.obtenerItinerarios();
@@ -195,13 +214,37 @@ export default {
               timeout: 3000,
               position: "top",
             });
+          })
+          .catch((error) => {
+            console.error("Error al crear itinerario:", error);
+            Notify.create({
+              type: "negative",
+              message: "Error al crear itinerario: " + error.message,
+            });
           });
       }
     },
     deleteItinerario(id) {
-      axios.delete(`${API_BASE_URL}api/Itinerario/${id}`).then(() => {
-        this.obtenerItinerarios();
-      });
+      axios
+        .delete(`${API_BASE_URL}api/Itinerario/${id}`, {
+          headers: { Authorization: `Bearer ${this.getUser.token}` },
+        })
+        .then(() => {
+          this.obtenerItinerarios();
+          Notify.create({
+            type: "positive",
+            message: "Itinerario eliminado correctamente",
+            timeout: 3000,
+            position: "top",
+          });
+        })
+        .catch((error) => {
+          console.error("Error al eliminar itinerario:", error);
+          Notify.create({
+            type: "negative",
+            message: "Error al eliminar itinerario: " + error.message,
+          });
+        });
     },
   },
   mounted() {

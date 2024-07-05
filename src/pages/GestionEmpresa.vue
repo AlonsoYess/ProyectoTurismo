@@ -97,8 +97,9 @@
 <script>
 import axios from "axios";
 import { Modal } from "bootstrap";
-import { API_BASE_URL } from "../config"; // Importar la constante
+import { API_BASE_URL } from "../config";
 import { Notify } from "quasar";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   data() {
@@ -113,18 +114,26 @@ export default {
       currentEmpresaId: null,
     };
   },
+  computed: {
+    ...mapGetters(["getUser"]), // Importar el getter 'getUser' desde Vuex
+  },
   methods: {
+    ...mapActions(["setUser"]),
     async obtenerEmpresas() {
       try {
+        const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
         const response = await axios.get(
-          `${API_BASE_URL}api/Empresa/ObtenerTodasLasEmpresasAsync`
+          `${API_BASE_URL}api/Empresa/ObtenerTodasLasEmpresasAsync`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log(response.data);
         this.empresas = response.data;
       } catch (error) {
+        console.error("Error al obtener empresas:", error);
         Notify.create({
           type: "negative",
-          message: "Error al recuperar datos: " + error.message,
+          message: "Error al obtener empresas: " + error.message,
         });
       }
     },
@@ -137,7 +146,6 @@ export default {
       this.isEdit = true;
       this.currentEmpresaId = empresa.ruc;
       this.empresaForm = { ...empresa };
-      console.log(empresa);
       new Modal(document.getElementById("empresaModal")).show();
     },
     guardarEmpresa() {
@@ -145,42 +153,73 @@ export default {
         axios
           .put(
             `${API_BASE_URL}api/Empresa/ActualizarEmpresaAsync`,
-            this.empresaForm
+            this.empresaForm,
+            { headers: { Authorization: `Bearer ${this.getUser.token}` } }
           )
           .then(() => {
             this.obtenerEmpresas();
             Modal.getInstance(document.getElementById("empresaModal")).hide();
-
             Notify.create({
               type: "positive",
               message: "Empresa editada correctamente",
-              timeout: 3000, // Duración de la notificación en milisegundos
-              position: "top", // Posición de la notificación
+              timeout: 3000,
+              position: "top",
+            });
+          })
+          .catch((error) => {
+            console.error("Error al actualizar empresa:", error);
+            Notify.create({
+              type: "negative",
+              message: "Error al actualizar empresa: " + error.message,
             });
           });
       } else {
         axios
           .post(
             `${API_BASE_URL}api/Empresa/CrearEmpresaAsync`,
-            this.empresaForm
+            this.empresaForm,
+            { headers: { Authorization: `Bearer ${this.getUser.token}` } }
           )
           .then(() => {
             this.obtenerEmpresas();
             Modal.getInstance(document.getElementById("empresaModal")).hide();
-
             Notify.create({
               type: "positive",
               message: "Empresa creada correctamente",
-              timeout: 3000, // Duración de la notificación en milisegundos
-              position: "top", // Posición de la notificación
+              timeout: 3000,
+              position: "top",
+            });
+          })
+          .catch((error) => {
+            console.error("Error al crear empresa:", error);
+            Notify.create({
+              type: "negative",
+              message: "Error al crear empresa: " + error.message,
             });
           });
       }
     },
     deleteEmpresa(ruc) {
-      axios.delete(`${API_BASE_URL}api/Empresa/${ruc}`).then(() => {
-        this.obtenerEmpresas();
-      });
+      axios
+        .delete(`${API_BASE_URL}api/Empresa/${ruc}`, {
+          headers: { Authorization: `Bearer ${this.getUser.token}` },
+        })
+        .then(() => {
+          this.obtenerEmpresas();
+          Notify.create({
+            type: "positive",
+            message: "Empresa eliminada correctamente",
+            timeout: 3000,
+            position: "top",
+          });
+        })
+        .catch((error) => {
+          console.error("Error al eliminar empresa:", error);
+          Notify.create({
+            type: "negative",
+            message: "Error al eliminar empresa: " + error.message,
+          });
+        });
     },
   },
   mounted() {

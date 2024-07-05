@@ -28,12 +28,6 @@
             <button class="btn btn-warning" @click="showEditModal(actividad)">
               Editar
             </button>
-            <button
-              class="btn btn-danger"
-              @click="deleteActividad(actividad.id)"
-            >
-              Eliminar
-            </button>
           </td>
         </tr>
       </tbody>
@@ -170,6 +164,7 @@ import axios from "axios";
 import { Modal } from "bootstrap";
 import { API_BASE_URL } from "../config"; // Importar la constante
 import { Notify } from "quasar";
+import { mapGetters } from "vuex";
 
 export default {
   data() {
@@ -190,30 +185,39 @@ export default {
       currentActividadId: null,
     };
   },
+  computed: {
+    ...mapGetters(["getUser"]), // Importar el getter 'getUser' desde Vuex
+  },
   methods: {
     async obtenerActividades() {
       try {
+        const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
         const response = await axios.get(
-          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`
+          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         this.actividades = response.data;
       } catch (error) {
         Notify.create({
           type: "negative",
-          message: "Error al recuperar datos: " + error.message,
+          message: "Error al recuperar actividades: " + error.message,
         });
       }
     },
     async obtenerEmpresas() {
       try {
+        const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
         const response = await axios.get(
-          `${API_BASE_URL}api/Empresa/ObtenerTodasLasEmpresasAsync`
+          `${API_BASE_URL}api/Empresa/ObtenerTodasLasEmpresasAsync`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         this.empresas = response.data;
       } catch (error) {
         Notify.create({
           type: "negative",
-          message: "Error al recuperar datos de empresas: " + error.message,
+          message: "Error al recuperar empresas: " + error.message,
         });
       }
     },
@@ -232,8 +236,6 @@ export default {
       new Modal(document.getElementById("actividadModal")).show();
     },
     showEditModal(actividad) {
-      console.log(actividad);
-
       actividad.fechaInicio = new Date(actividad.fechaInicio)
         .toISOString()
         .split("T")[0];
@@ -248,11 +250,14 @@ export default {
       new Modal(document.getElementById("actividadModal")).show();
     },
     guardarActividad() {
+      const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
       if (this.isEdit) {
         axios
           .put(
             `${API_BASE_URL}api/Actividad/ActualizarActividad`,
-            this.actividadForm
+            this.actividadForm,
+            { headers: { Authorization: `Bearer ${token}` } }
           )
           .then(() => {
             this.obtenerActividades();
@@ -261,8 +266,8 @@ export default {
             Notify.create({
               type: "positive",
               message: "Actividad editada correctamente",
-              timeout: 3000, // Duración de la notificación en milisegundos
-              position: "top", // Posición de la notificación
+              timeout: 3000,
+              position: "top",
             });
           })
           .catch((error) => {
@@ -277,7 +282,8 @@ export default {
         axios
           .post(
             `${API_BASE_URL}api/Actividad/CrearActividad`,
-            this.actividadForm
+            this.actividadForm,
+            { headers: { Authorization: `Bearer ${token}` } }
           )
           .then(() => {
             this.obtenerActividades();
@@ -286,8 +292,8 @@ export default {
             Notify.create({
               type: "positive",
               message: "Actividad creada correctamente",
-              timeout: 3000, // Duración de la notificación en milisegundos
-              position: "top", // Posición de la notificación
+              timeout: 3000,
+              position: "top",
             });
           })
           .catch((error) => {
@@ -301,15 +307,19 @@ export default {
       }
     },
     deleteActividad(id) {
+      const token = this.getUser.token; // Obtener el token directamente desde Vuex
+
       axios
-        .delete(`${API_BASE_URL}api/Actividad/${id}`)
+        .delete(`${API_BASE_URL}api/Actividad/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
         .then(() => {
           this.obtenerActividades();
           Notify.create({
             type: "positive",
             message: "Actividad eliminada correctamente",
-            timeout: 3000, // Duración de la notificación en milisegundos
-            position: "top", // Posición de la notificación
+            timeout: 3000,
+            position: "top",
           });
         })
         .catch((error) => {
