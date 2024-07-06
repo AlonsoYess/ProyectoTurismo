@@ -65,13 +65,14 @@
               <a href="" class="nav-item nav-link active">Inicio</a>
               <a href="" class="nav-item nav-link">Nosotros</a>
               <a href="" class="nav-item nav-link">Excursiones</a>
-
-              <div v-if="usuarioLogueado" class="nav-item dropdown">
-                <a
-                  class="nav-link dropdown-toggle"
-                  data-toggle="dropdown"
-                  @click="logout"
-                >
+              <a
+                v-if="usuarioLogueado"
+                class="nav-item nav-link"
+                @click="misReservasModal()"
+                >Mis Reservas</a
+              >
+              <div v-if="usuarioLogueado" class="">
+                <a class="nav-item nav-link" @click="logout">
                   Hola! {{ usuario.nombre }}
                 </a>
               </div>
@@ -141,7 +142,7 @@
     <!-- Carousel End -->
 
     <!-- Booking Start -->
-    <div class="container-fluid booking mt-5 pb-5">
+    <!--<div class="container-fluid booking mt-5 pb-5">
       <div class="container pb-5">
         <div class="bg-light shadow" style="padding: 30px">
           <div class="row align-items-center" style="min-height: 60px">
@@ -207,7 +208,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div>-->
     <!-- Booking End -->
 
     <!-- About Start -->
@@ -299,8 +300,9 @@
                 <div class="border-top mt-4 pt-4">
                   <div class="d-flex justify-content-between">
                     <h6 class="m-0">
-                      <i class="fa fa-star text-primary mr-2"></i>4.5
-                      <small>(250)</small>
+                      <i class="fa fa-star text-primary mr-2"></i
+                      >{{ act.promedioCalificacion }}
+                      <small>({{ act.totalCalificaciones }})</small>
                     </h6>
                     <h5 class="m-0">S./ {{ act.precio }}</h5>
                   </div>
@@ -375,11 +377,19 @@
                 </ul>
               </div>
             </div>
-            <div class="d-flex justify-content-center mt-4">
-              <button class="btn btn-danger btn-lg" @click="Reservar">
-                Reservar
-              </button>
+            <div v-if="usuarioLogueado">
+              <div class="d-flex justify-content-center mt-4" v-if="verReserva">
+                <button class="btn btn-danger btn-lg" @click="Reservar">
+                  Reservar
+                </button>
+              </div>
+              <div class="d-flex justify-content-center mt-4" v-else>
+                <div class="alert alert-warning mt-3">
+                  Ya tienes una reserva de este tour
+                </div>
+              </div>
             </div>
+
             <!-- Sección de Reseñas -->
             <div class="container mt-4">
               <h5>Reseñas:</h5>
@@ -463,6 +473,56 @@
       </div>
     </div>
 
+    <!-- MODAL MIS RESERVAS-->
+    <div
+      class="modal fade"
+      id="misReservasModal"
+      tabindex="-1"
+      aria-labelledby="misReservasModal"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="actividadModalLabel">Mis Reservas</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row" v-for="a in filtrarMisReservas" :key="a.usuario">
+              <div class="col-md-6">
+                <img
+                  class="img-fluid"
+                  :src="`https://localhost:7012/imagenes/${a.imagen}`"
+                  alt="Imagen de la Actividad"
+                />
+              </div>
+              <div class="col-md-6">
+                <p><strong>Título:</strong> {{ a.titulo }}</p>
+                <p><strong>Descripción:</strong> {{ a.descripcion }}</p>
+                <p><strong>Destino:</strong> {{ a.destino }}</p>
+                <p>
+                  <strong>Fecha de Inicio:</strong>
+                  {{ new Date(a.fechaInicio).toLocaleDateString() }}
+                </p>
+                <p>
+                  <strong>Fecha de Fin:</strong>
+                  {{ new Date(a.fechaFin).toLocaleDateString() }}
+                </p>
+                <p><strong>Precio:</strong> S./ {{ a.precio }}</p>
+
+                <p><strong>Empresa:</strong> {{ a.empresaId }}</p>
+              </div>
+              <hr class="thick-divider" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Packages End -->
 
     <!-- Destination Start -->
@@ -626,9 +686,12 @@ export default {
       errorMessage: "",
       calificacionResenia: 0,
       actividades: [],
+      reservaXusuario: [],
+      filtrarMisReservas: [],
       nuevaResenia: "",
       idActividadSeleccionada: 0,
       usuario: null,
+      verReserva: true,
       actividadForm: {
         titulo: "",
         descripcion: "",
@@ -744,6 +807,7 @@ export default {
         this.setToken(usuario.Token);
         //this.usuarioLogueado = true;
         this.verificarUsuarioLogueado();
+
         Notify.create({
           type: "positive",
           message: "Bienvenido " + usuario.nombre,
@@ -786,14 +850,17 @@ export default {
     },
     async obtenerReservasxUsuario() {
       try {
+        const user = JSON.parse(localStorage.getItem("userWeb"));
+
         const response = await axios.get(
-          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`
+          `${API_BASE_URL}api/Reserva/ObtenerReservasPorUsuarioId/${user.id}`
         );
-        this.actividades = response.data;
+        this.reservaXusuario = response.data;
+        console.log(this.reservaXusuario);
       } catch (error) {
         Notify.create({
           type: "negative",
-          message: "Error al recuperar actividades: " + error.message,
+          message: "Error al recuperar reservas: " + error.message,
         });
       }
     },
@@ -817,21 +884,51 @@ export default {
         console.error("Error en la solicitud:", error.message);
       }
     },
+
+    misReservasModal() {
+      const usuario = JSON.parse(localStorage.getItem("userWeb"));
+
+      if (usuario) {
+        this.filtrarMisReservas = this.reservaXusuario.map((reserva) =>
+          this.actividades.find(
+            (actividad) => actividad.id === reserva.actividadId
+          )
+        );
+      }
+
+      console.log(this.filtrarMisReservas, "this.filtrarMisReservas");
+
+      new Modal(document.getElementById("misReservasModal")).show();
+    },
     showModal(act) {
       act.fechaInicio = new Date(act.fechaInicio).toISOString().split("T")[0];
-
       act.fechaFin = new Date(act.fechaFin).toISOString().split("T")[0];
-
       this.idActividadSeleccionada = act.id;
-
       this.actividadForm = { ...act };
-      const rating = document.querySelector(".q-rating");
+
+      const usuario = JSON.parse(localStorage.getItem("userWeb"));
+
+      if (usuario) {
+        console.log(usuario.id);
+        console.log(act.reservas);
+        var existe = act.reservas.find((x) => x.usuarioId == usuario.id);
+        if (existe) {
+          this.verReserva = false;
+        } else {
+          this.verReserva = true;
+        }
+      }
+      console.log(existe, "existe");
       new Modal(document.getElementById("actividadDetalleModal")).show();
     },
     verificarUsuarioLogueado() {
       const usuario = JSON.parse(localStorage.getItem("userWeb"));
       this.usuarioLogueado = !!usuario;
       this.usuario = usuario;
+
+      if (usuario) {
+        this.obtenerReservasxUsuario();
+      }
     },
     logout() {
       // Elimina tokens de cookies
@@ -910,5 +1007,11 @@ export default {
 /* Color de las estrellas */
 .text-yellow {
   color: yellow;
+}
+.thick-divider {
+  border: none;
+  height: 5px; /* Grosor de la línea */
+  background-color: black; /* Color de la línea */
+  margin: 20px 0; /* Espaciado arriba y abajo */
 }
 </style>
