@@ -65,7 +65,18 @@
               <a href="" class="nav-item nav-link active">Inicio</a>
               <a href="" class="nav-item nav-link">Nosotros</a>
               <a href="" class="nav-item nav-link">Excursiones</a>
+
+              <div v-if="usuarioLogueado" class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  data-toggle="dropdown"
+                  @click="logout"
+                >
+                  Hola! {{ usuario.nombre }}
+                </a>
+              </div>
               <a
+                v-else
                 @click="showLoginDialog = true"
                 class="nav-item nav-link"
                 style="cursor: pointer"
@@ -364,47 +375,87 @@
                 </ul>
               </div>
             </div>
-
+            <div class="d-flex justify-content-center mt-4">
+              <button class="btn btn-danger btn-lg" @click="Reservar">
+                Reservar
+              </button>
+            </div>
             <!-- Sección de Reseñas -->
-            <div class="row mt-4">
-              <div>
-                <h5>Reseñas:</h5>
-                <ul>
-                  <li v-for="review in reviews" :key="review.date">
-                    <p><strong>Fecha:</strong> {{ review.date }}</p>
-                    <p>
-                      <strong>Valoración:</strong> {{ review.rating }} estrellas
-                    </p>
-                    <p><strong>Comentario:</strong> {{ review.text }}</p>
-                  </li>
-                </ul>
+            <div class="container mt-4">
+              <h5>Reseñas:</h5>
+              <div class="row">
+                <div class="col-md-12">
+                  <div
+                    class="list-group-item"
+                    v-for="r in actividadForm.resenia"
+                    :key="r.date"
+                    ref="reseñas"
+                  >
+                    <div class="row">
+                      <div class="col-1">
+                        <q-rating
+                          v-model="r.calificacion"
+                          max="5"
+                          size="1em"
+                          color="green"
+                          icon="star_border"
+                          icon-selected="star"
+                          icon-half="star_half"
+                          no-dimming
+                          readonly
+                        />
+                      </div>
+                      <div class="col-11">
+                        <div class="d-flex w-100 justify-content-between">
+                          <h5 class="mb-1">
+                            <strong>{{ r.usuario }}</strong>
+                          </h5>
+                          <strong
+                            ><span class="text-muted">{{
+                              r.fechaReseña
+                            }}</span></strong
+                          >
+                        </div>
+                        <p class="mb-1">
+                          {{ r.comentario }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-2"></div>
               </div>
             </div>
 
-            <div>
-              <b-form-rating
-                v-model="value"
-                variant="warning"
-                class="mb-2"
-              ></b-form-rating>
-              <p class="mt-2">Value: {{ value }}</p>
-            </div>
-
             <!-- Añadir Reseña -->
-            <div class="row mt-4">
-              <div class="col-md-12">
-                <h5>Añadir Reseña:</h5>
+            <div class="container mt-4" v-if="usuarioLogueado">
+              <div class="row">
+                <div class="col-md-12">
+                  <h5>Añadir Reseña:</h5>
 
-                <div class="form-group mt-2">
-                  <label for="newReview">Comentario:</label>
-                  <textarea
-                    id="newReview"
-                    v-model="newReview"
-                    class="form-control"
-                    rows="3"
-                  ></textarea>
+                  <q-rating
+                    v-model="calificacionResenia"
+                    max="5"
+                    size="1.5em"
+                    color="green"
+                    icon="star_border"
+                    icon-selected="star"
+                    icon-half="star_half"
+                    no-dimming
+                  />
+
+                  <div class="form-group mt-2">
+                    <textarea
+                      id="nuevaResenia"
+                      v-model="nuevaResenia"
+                      class="form-control"
+                      rows="3"
+                    ></textarea>
+                  </div>
+                  <button class="btn btn-primary mt-2" @click="guardarResenia">
+                    Añadir Reseña
+                  </button>
                 </div>
-                <button class="btn btn-primary mt-2">Añadir Reseña</button>
               </div>
             </div>
           </div>
@@ -568,12 +619,16 @@ import { Modal } from "bootstrap";
 export default {
   data() {
     return {
+      usuarioLogueado: false,
       showLoginDialog: false,
       username: "",
       password: "",
       errorMessage: "",
-      value: null,
+      calificacionResenia: 0,
       actividades: [],
+      nuevaResenia: "",
+      idActividadSeleccionada: 0,
+      usuario: null,
       actividadForm: {
         titulo: "",
         descripcion: "",
@@ -584,14 +639,77 @@ export default {
         capacidad: 0,
         empresaId: null,
         imagen: "",
-        newReview: "",
-        newRating: 0,
-        reviews: [],
       },
     };
   },
   methods: {
     ...mapActions(["setUser", "setToken"]),
+    async guardarResenia() {
+      const user = JSON.parse(localStorage.getItem("userWeb"));
+
+      const response = await axios.post(
+        `${API_BASE_URL}api/Resenia/CrearResenia`,
+        {
+          usuarioId: user.id,
+          actividadId: this.idActividadSeleccionada,
+          calificacion: this.calificacionResenia,
+          comentario: this.nuevaResenia,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+
+      await this.obtenerReseniasPorActividadId(this.idActividadSeleccionada);
+      await this.obtenerActividades();
+      this.calificacionResenia = 0;
+      this.nuevaResenia = "";
+
+      Notify.create({
+        type: "positive",
+        message: "Resenia Creada",
+        position: "center",
+        timeout: 1500,
+      });
+    },
+
+    async Reservar() {
+      try {
+        const user = JSON.parse(localStorage.getItem("userWeb"));
+
+        const response = await axios.post(
+          `${API_BASE_URL}api/Reserva/CrearReserva`,
+          {
+            usuarioId: user.id,
+            actividadId: this.idActividadSeleccionada,
+            cantidad: 1,
+            estado: "Pendiente",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${user.token}`,
+            },
+          }
+        );
+
+        Notify.create({
+          type: "positive",
+          message:
+            "Reserva Generada, un asesor se comunicara en breve con usted",
+          position: "top",
+          timeout: 1500,
+        });
+      } catch (error) {
+        Notify.create({
+          type: "negative",
+          message: "Error : Ocurrieron algunos problemas, intentalo mas tarde ",
+          position: "top",
+          timeout: 1500,
+        });
+      }
+    },
     async login() {
       try {
         const response = await axios.post(
@@ -624,7 +742,8 @@ export default {
         // Guarda usuario y token en el estado de la aplicación (Vuex)
         this.setUser(usuario); // Llama a la acción setUser para guardar el usuario en Vuex
         this.setToken(usuario.Token);
-
+        //this.usuarioLogueado = true;
+        this.verificarUsuarioLogueado();
         Notify.create({
           type: "positive",
           message: "Bienvenido " + usuario.nombre,
@@ -665,17 +784,86 @@ export default {
         });
       }
     },
+    async obtenerReservasxUsuario() {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}api/Actividad/ObtenerTodasLasActividades`
+        );
+        this.actividades = response.data;
+      } catch (error) {
+        Notify.create({
+          type: "negative",
+          message: "Error al recuperar actividades: " + error.message,
+        });
+      }
+    },
+    async obtenerReseniasPorActividadId(actividadId) {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}api/Resenia/ObtenerReseniasPorActividadId/${actividadId}`
+        );
+
+        if (response.status === 200) {
+          console.log("Datos de resenias:", response.data);
+          this.actividadForm.resenia = response.data;
+        } else {
+          Notify.create({
+            type: "negative",
+            message: "Error al obtener resenias:" + response.statusText,
+          });
+        }
+      } catch (error) {
+        // Capturamos cualquier error de la solicitud
+        console.error("Error en la solicitud:", error.message);
+      }
+    },
     showModal(act) {
       act.fechaInicio = new Date(act.fechaInicio).toISOString().split("T")[0];
 
       act.fechaFin = new Date(act.fechaFin).toISOString().split("T")[0];
 
+      this.idActividadSeleccionada = act.id;
+
       this.actividadForm = { ...act };
+      const rating = document.querySelector(".q-rating");
       new Modal(document.getElementById("actividadDetalleModal")).show();
+    },
+    verificarUsuarioLogueado() {
+      const usuario = JSON.parse(localStorage.getItem("userWeb"));
+      this.usuarioLogueado = !!usuario;
+      this.usuario = usuario;
+    },
+    logout() {
+      // Elimina tokens de cookies
+      Cookies.remove("access_token");
+      Cookies.remove("refresh_token");
+
+      // Elimina usuario de localStorage
+      localStorage.removeItem("userWeb");
+
+      // Resetea el estado del usuario en Vuex y en el componente
+      this.setUser(null);
+      this.setToken(null);
+      this.usuarioLogueado = false;
+
+      Notify.create({
+        type: "positive",
+        message: "Has cerrado sesión correctamente",
+        position: "center",
+        timeout: 1500,
+      });
     },
   },
   mounted() {
+    const rating = document.querySelectorAll(".q-rating");
+    console.log(rating, "rating");
+    if (rating) {
+      rating.forEach((elemento) => {
+        elemento.classList.remove("row");
+      });
+    }
     this.obtenerActividades();
+    this.verificarUsuarioLogueado();
   },
 };
 </script>
@@ -711,5 +899,16 @@ export default {
 
 .q-dialog__inner {
   overflow: hidden;
+}
+
+/* Asegurar que los iconos dentro de q-rating se alineen correctamente */
+.q-rating__icon-container {
+  margin-right: 5px;
+  display: inline-block !important;
+}
+
+/* Color de las estrellas */
+.text-yellow {
+  color: yellow;
 }
 </style>
